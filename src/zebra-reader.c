@@ -36,6 +36,7 @@ int main(void) {
     perror("Didn't attach\n");
     exit(1);
   }
+  printf("ATTACHED!\n");
 
   /*
   while(1){
@@ -61,10 +62,15 @@ int main(void) {
     perror("detach failed.\n");
     exit(1);
   }
+
+  printf("DETACHED!!\n");
+
   if(shmctl(shId, IPC_RMID, 0) < 0){
     perror("deallocate failed.\n");
     exit(1);
   }
+
+  printf("OUTTA HERE!\n");
 
   return 0;
 }
