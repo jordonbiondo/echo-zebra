@@ -29,7 +29,7 @@ int main(void) {
     perror("Its not here.\n");
     exit(1);
   }
-
+  printf("Shared Mem Id: %d\n", shId); 
 
   //Attach to shared memory
   if((sharedMem = shmat(shId, 0, 0)) == (void*) -1){
