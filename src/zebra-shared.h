@@ -4,5 +4,7 @@
 
 #define zebra_keygen "shared_file.txt"
 
+#define zebra_size 1024
+
 
 #endif
