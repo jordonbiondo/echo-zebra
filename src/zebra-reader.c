@@ -38,24 +38,34 @@ int main(void) {
   }
   printf("ATTACHED!\n");
 
-  /*
+  
   while(1){
-    readIn = sharedMem;
-    //Print out to display
-    printf("%s\n", readIn);
-
-
-    //read in exit
-    if(strcmp(readIn, "exit")){
-
-      //detach
-      if(shmdt(sharedMem) < 0){
-	  perror("detach failed\n");
+    //Check if new data written, first byte = 0
+    if(sharedMem[0] = 0)
+      {
+	readIn = sharedMem;
+	//Print out to display
+	printf("%s\n", readIn);
+	
+	//Increment Counter -- Dont think this will work JORDON!!!
+	/*	char* newMem = sharedMem[0] + 1;
+	for(int i = 1; i < sharedMem.length; i++)
+	  {
+	    newMem += sharedMem[i];
+	  }
+	*/
+	//read in exit
+	if(strcmp(readIn, "exit")){
+	  
+	  //detach
+	  if(shmdt(sharedMem) < 0){
+	    perror("detach failed\n");
+	  }
+	  
+	  exit(1);
 	}
-
-      exit(1);
-    }
-   }*/
+      }
+   }
   
   //Detach
   if(shmdt(sharedMem) < 0){
