@@ -41,19 +41,15 @@ int main(void) {
   
   while(1){
     //Check if new data written, first byte = 0
-    if(sharedMem[0] = 0)
+    if(sharedMem[4] == 0)
       {
 	readIn = sharedMem;
 	//Print out to display
 	printf("%s\n", readIn);
-	
-	//Increment Counter -- Dont think this will work JORDON!!!
-	/*	char* newMem = sharedMem[0] + 1;
-	for(int i = 1; i < sharedMem.length; i++)
-	  {
-	    newMem += sharedMem[i];
-	  }
-	*/
+
+	//Increment Count
+	//sharedMem[4]++;
+
 	//read in exit
 	if(strcmp(readIn, "exit")){
 	  
