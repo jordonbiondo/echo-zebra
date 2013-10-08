@@ -48,7 +48,10 @@ int main(void) {
 	printf("%s\n", readIn);
 
 	//Increment Count
-	//sharedMem[4]++;
+	sharedMem[4]++;
+
+
+	printf("SharedMem: %s\n", sharedMem);
 
 	//read in exit
 	if(strcmp(readIn, "exit")){
