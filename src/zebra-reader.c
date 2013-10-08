@@ -21,6 +21,7 @@
 //Prototypes
 void CleanUp();
 void handle_signal(int);
+void check_for_writer(int);
 
 //Globals
 char* sharedMem;
@@ -101,4 +102,14 @@ void CleanUp()
 //On Signal Call CleanUp
 void handle_signal(int sig){
   CleanUp();
+}
+
+//Check if Writer exists
+void check_for_writer(int pid){
+  int writer = kill(pid, 0);
+  if(writer < 0){
+    //Writer Noes Not Exists
+  }else{
+    //Writer Exists
+  }
 }
