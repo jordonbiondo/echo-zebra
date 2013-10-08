@@ -9,13 +9,18 @@
 #include "zebra-shared.h"
 
 
+
+void sig_user_handler(int sig) {
+  printf("yay\n");
+}
+
 /**
  * Main
  */
 int main(void) {
-
+  
   key_t mem_key = ftok(zebra_keygen, 0);
-
+  
   int shmId = shmget(mem_key , zebra_size, IPC_CREAT|S_IRUSR|S_IWUSR);
   if (shmId < 0) {
     printf("Failed get\n");
@@ -33,10 +38,17 @@ int main(void) {
   }
   
   pid_t my_pid = getpid();
-  
-  memcpy(sharedPtr, int_bytes(&my_pid), 4);
-  
-  sleep(10);
+
+  // write my pid to mem
+  memcpy(sharedPtr, int_bytes(&my_pid), sizeof(int));
+  // write 0 to read count
+  int zero = 1;
+  printf("zed: %d\n", zero);
+  memcpy(sharedPtr+4, int_bytes(&zero), sizeof(int));
+  int i;
+  fgets(sharedPtr+8, zebra_size - 8, stdin);
+  pause();
+
   
   shmctl(shmId, IPC_RMID, 0);
 
