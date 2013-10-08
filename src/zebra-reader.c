@@ -16,13 +16,22 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <string.h>
+#include <signal.h>
+
+//Prototypes
+void CleanUp();
+void handle_signal(int);
+
+//Globals
+char* sharedMem;
+int shId;
 
 int main(void) {
-  char* sharedMem;
   char* readIn;
   int size = zebra_size;  
   key_t key = ftok(zebra_keygen, 0);
-  int shId;
+
+  signal(SIGINT, handle_signal);
 
   //Get shared memory
   if((shId = shmget(key, size, S_IRUSR|S_IWUSR)) < 0){
@@ -66,20 +75,30 @@ int main(void) {
       }
    }
   
-  //Detach
-  if(shmdt(sharedMem) < 0){
-    perror("detach failed.\n");
-    exit(1);
-  }
-
-  printf("DETACHED!!\n");
-
-  if(shmctl(shId, IPC_RMID, 0) < 0){
-    perror("deallocate failed.\n");
-    exit(1);
-  }
-
-  printf("OUTTA HERE!\n");
+  CleanUp();
 
   return 0;
+}
+
+//Detach, Deallocate, and Exit
+void CleanUp()
+{
+  //Detach
+  if(shmdt(sharedMem) < 0){
+    perror("detach failed\n");
+    exit(1);
+  }
+  //Deallocate
+  if(shmctl(shId, IPC_RMID, 0) < 0){
+    perror("deallocate failed\n");
+    exit(1);
+  }
+  //exit
+  exit(0);
+}
+
+
+//On Signal Call CleanUp
+void handle_signal(int sig){
+  CleanUp();
 }
