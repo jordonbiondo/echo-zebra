@@ -1,4 +1,3 @@
-
 #ifndef __ZEBRA_WRITER_H__
 #define __ZEBRA_WRITER_H__
 #include "zebra-shared.h"
@@ -13,21 +12,6 @@ int shmId;
  */
 char* sharedPtr;
 
-/**
- * Where the writer should put it's pid in shared mem
- */
-#define PID_WRITE_LOC(ptr) ptr+0
-
-/**
- * Where the readers and writers will keep track of the read counts in shared mem
- */
-#define READ_COUNT_LOC(ptr) ptr+sizeof(pid_t)
-
-
-/**
- * location in shared me where the string message will go 
- */
-#define MSG_LOC(ptr) ptr+sizeof(pid_t)+sizeof(int)
 
 /**
  * Handle signals
@@ -47,10 +31,19 @@ inline int read_count() {
 }
 
 /**
+ * Write a int to memory
+ */
+inline void write_int(byte* mem, int n) {
+  int x = n;
+  memcpy(mem, int_bytes(&x), sizeof(int));
+  return;
+}
+
+/**
  * Reset the read count ticker
  */
 inline void reset_read_count() {
-  int zero = 0;
-  memcpy(READ_COUNT_LOC(sharedPtr), int_bytes(&zero), sizeof(int));
+  write_int(READ_COUNT_LOC(sharedPtr), 0);
 }
-#endif
+
+#endif /* __ZEBRA_WRITER_H__ */

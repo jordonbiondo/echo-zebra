@@ -17,6 +17,7 @@
  * What to do on a sigusr
  */
 void signal_handler(int sig) {
+  printf("SIGNAL!");
   switch(sig) {
 
   case SIGUSR1: case SIGUSR2: {
@@ -59,32 +60,34 @@ int main(void) {
   signal(SIGINT, signal_handler);
   signal(SIGUSR1, signal_handler);
   signal(SIGUSR2, signal_handler);
+
   shmId = shmget(mem_key , zebra_size, IPC_CREAT|S_IRUSR|S_IWUSR);
   if (shmId < 0) {
     printf("Failed get\n");
     exit(-1);
   }
-  
-  printf("made: %d\n", shmId);
-  printf("my pid: %d\n", getpid());
+
+  pid_t my_pid = getpid();
+  printf("my mem: %d\n", shmId);
+  printf("my pid: %d\n", my_pid);
   
   sharedPtr = shmat(shmId, (void*)0, 0);
   
   if (sharedPtr < 0) {
-    printf("Failed attach\n");
-    exit(-1);
+    printf("Failed attach :(\n");
+    clean_and_exit();
+    exit(-1); // just in case
   }
   
-  pid_t my_pid = getpid();
+  
   
   // write my pid to mem
-  memcpy(sharedPtr, int_bytes(&my_pid), sizeof(int));
-  // write 0 to read count
-  int zero = 1;
-  printf("zed: %d\n", zero);
-  memcpy(sharedPtr+4, int_bytes(&zero), sizeof(int));
+  write_int(PID_WRITE_LOC(sharedPtr), my_pid);
   
-  fgets(sharedPtr+8, zebra_size - 8, stdin);
+  // set read count to initial 0
+  reset_read_count();
+  
+  fgets(MSG_LOC(sharedPtr), zebra_msg_size, stdin);
   pause();
 
   

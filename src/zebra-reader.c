@@ -14,9 +14,14 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/ipc.h>
+#include <unistd.h>
 #include <sys/shm.h>
 #include <string.h>
+#include <signal.h>
 
+/**
+ * Main
+ */
 int main(void) {
   char* sharedMem;
   char* readIn;
@@ -37,34 +42,42 @@ int main(void) {
     exit(1);
   }
   printf("ATTACHED!\n");
-
+  pid_t writer_pid = bytes_to_int(PID_WRITE_LOC(sharedMem));
+  printf("%d\n", writer_pid);
+  printf("%d\n", bytes_to_int(READ_COUNT_LOC(sharedMem)));
   
-  while(1){
-    //Check if new data written, first byte = 0
-    if(sharedMem[4] == 0)
-      {
-	readIn = sharedMem;
-	//Print out to display
-	printf("%s\n", readIn);
+  printf("reader: %s\n", MSG_LOC(sharedMem));
+  sleep(1);
+  int fail = kill(writer_pid, SIGUSR1);
+  if (fail) {
+    printf("fail: %d\n", fail);
+  }
+  /* while(1){ */
+  /*   //Check if new data written, first byte = 0 */
+  /*   if(sharedMem[4] == 0) */
+  /*     { */
+  /* 	readIn = sharedMem; */
+  /* 	//Print out to display */
+  /* 	printf("%s\n", readIn); */
 
-	//Increment Count
-	sharedMem[4]++;
+  /* 	//Increment Count */
+  /* 	sharedMem[4]++; */
 
 
-	printf("SharedMem: %s\n", sharedMem);
+  /* 	printf("SharedMem: %s\n", sharedMem); */
 
-	//read in exit
-	if(strcmp(readIn, "exit")){
+  /* 	//read in exit */
+  /* 	if(strcmp(readIn, "exit")){ */
 	  
-	  //detach
-	  if(shmdt(sharedMem) < 0){
-	    perror("detach failed\n");
-	  }
+  /* 	  //detach */
+  /* 	  if(shmdt(sharedMem) < 0){ */
+  /* 	    perror("detach failed\n"); */
+  /* 	  } */
 	  
-	  exit(1);
-	}
-      }
-   }
+  /* 	  exit(1); */
+  /* 	} */
+  /*     } */
+  /*  } */
   
   //Detach
   if(shmdt(sharedMem) < 0){
@@ -74,10 +87,10 @@ int main(void) {
 
   printf("DETACHED!!\n");
 
-  if(shmctl(shId, IPC_RMID, 0) < 0){
-    perror("deallocate failed.\n");
-    exit(1);
-  }
+  /* if(shmctl(shId, IPC_RMID, 0) < 0){ */
+    /* perror("deallocate failed.\n"); */
+    /* exit(1); */
+  /* } */
 
   printf("OUTTA HERE!\n");
 

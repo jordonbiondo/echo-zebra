@@ -23,9 +23,27 @@ int bytes_to_int(byte* bytes) {
 }
 
 
+/**
+ * Where the writer should put it's pid in shared mem
+ */
+#define PID_WRITE_LOC(ptr) ptr+0
+
+/**
+ * Where the readers and writers will keep track of the read counts in shared mem
+ */
+#define READ_COUNT_LOC(ptr) ptr+sizeof(pid_t)
+
+
+/**
+ * location in shared me where the string message will go 
+ */
+#define MSG_LOC(ptr) ptr+sizeof(pid_t)+sizeof(int)
+
 
 #define zebra_keygen "shared_file.txt"
 
 #define zebra_size 1024
+
+#define zebra_msg_size (1024 - sizeof(pid_t) - sizeof(int))
 
 #endif
