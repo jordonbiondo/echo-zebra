@@ -13,19 +13,23 @@
  * Function implementations
  * ************************************************************** */
 
+int connected_readers = 0;
+
 /**
  * What to do on a sigusr
  */
 void signal_handler(int sig) {
-  printf("SIGNAL!");
   switch(sig) {
 
-  case SIGUSR1: case SIGUSR2: {
-    printf("sigusr: %d\n", sig);
-    // do sig user stuff
+  case SIGUSR1: {
+    return;
     break;
   }
     
+  case SIGUSR2: {
+    connected_readers ++;
+    break;
+  }
   case SIGINT: {
     printf("sigint\n");
     clean_and_exit();
@@ -34,6 +38,7 @@ void signal_handler(int sig) {
   default: {
     //defualt
     printf("eff\n");
+    return;
   }
   }
 }
@@ -55,7 +60,7 @@ void clean_and_exit() {
  * Main
  */
 int main(void) {
-  
+  printf("%lu | %lu", sizeof(pid_t), sizeof(int));
   key_t mem_key = ftok(zebra_keygen, 0);
   signal(SIGINT, signal_handler);
   signal(SIGUSR1, signal_handler);
@@ -79,19 +84,24 @@ int main(void) {
     exit(-1); // just in case
   }
   
-  
-  
   // write my pid to mem
-  write_int(PID_WRITE_LOC(sharedPtr), my_pid);
+  ((int*)sharedPtr)[0] = my_pid;
+  //write_int(PID_WRITE_LOC(sharedPtr), my_pid);
   
   // set read count to initial 0
-  reset_read_count();
+  ((int*)sharedPtr)[1] = 0;
   
   fgets(MSG_LOC(sharedPtr), zebra_msg_size, stdin);
-  pause();
 
-  
-  
+  while(1) {
+    if (((int*)sharedPtr)[2] < connected_readers) {
+      pause();
+    } else {
+      fgets(MSG_LOC(sharedPtr), zebra_msg_size, stdin);
+      ((int*)sharedPtr)[1] += 1;
+      //reset_read_count();
+    }
+  }
   clean_and_exit();
   return -1;
 }

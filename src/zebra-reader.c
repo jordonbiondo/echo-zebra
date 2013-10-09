@@ -18,81 +18,73 @@
 #include <sys/shm.h>
 #include <string.h>
 #include <signal.h>
+#include <stdbool.h>
+
+/**
+ * Is process alive
+ */
+#define ALIVEP(pid) (kill(pid, 0) == 0)
+
 
 /**
  * Main
  */
 int main(void) {
   char* sharedMem;
-  char* readIn;
   int size = zebra_size;  
   key_t key = ftok(zebra_keygen, 0);
   int shId;
 
   //Get shared memory
-  if((shId = shmget(key, size, S_IRUSR|S_IWUSR)) < 0){
+  if((shId = shmget(key, size, S_IRUSR|S_IWUSR)) < 0) {
     perror("Its not here.\n");
     exit(1);
   }
-  printf("Shared Mem Id: %d\n", shId); 
 
-  //Attach to shared memory
+  // attach to mem
   if((sharedMem = shmat(shId, 0, 0)) == (void*) -1){
     perror("Didn't attach\n");
     exit(1);
   }
-  printf("ATTACHED!\n");
-  pid_t writer_pid = bytes_to_int(PID_WRITE_LOC(sharedMem));
-  printf("%d\n", writer_pid);
-  printf("%d\n", bytes_to_int(READ_COUNT_LOC(sharedMem)));
+
+  // pid of writer
+  int writer_pid = ((int*)sharedMem)[0];
   
-  printf("reader: %s\n", MSG_LOC(sharedMem));
-  sleep(1);
-  int fail = kill(writer_pid, SIGUSR1);
-  if (fail) {
-    printf("fail: %d\n", fail);
+  // tell writer you connected
+  kill(writer_pid, SIGUSR2); // connect
+
+  // last read message id
+  int last_read = -1;
+
+  while(1) {
+    // if we haven't read this message id
+    if (last_read != ((int*)sharedMem)[1]) {
+
+      printf("%s\n", MSG_LOC(sharedMem));
+      last_read = ((int*)sharedMem)[1]; // mark as read
+      ((int*)sharedMem)[2] += 1; // increment read count
+      int failed = kill(writer_pid, SIGUSR1); // tell writer you read it
+      if (failed) {
+	printf("Writer is dead :(\n");
+	exit(-1);
+      }
+      
+    } else {
+      // ensure writer is alive
+      if(! ALIVEP(writer_pid)) {
+	printf("Writer is dead :(\n");
+	exit(-1);
+      }
+      // shady context switch
+      usleep(100); 
+    }
   }
-  /* while(1){ */
-  /*   //Check if new data written, first byte = 0 */
-  /*   if(sharedMem[4] == 0) */
-  /*     { */
-  /* 	readIn = sharedMem; */
-  /* 	//Print out to display */
-  /* 	printf("%s\n", readIn); */
 
-  /* 	//Increment Count */
-  /* 	sharedMem[4]++; */
-
-
-  /* 	printf("SharedMem: %s\n", sharedMem); */
-
-  /* 	//read in exit */
-  /* 	if(strcmp(readIn, "exit")){ */
-	  
-  /* 	  //detach */
-  /* 	  if(shmdt(sharedMem) < 0){ */
-  /* 	    perror("detach failed\n"); */
-  /* 	  } */
-	  
-  /* 	  exit(1); */
-  /* 	} */
-  /*     } */
-  /*  } */
-  
   //Detach
-  if(shmdt(sharedMem) < 0){
+  if(shmdt(sharedMem) < 0) {
     perror("detach failed.\n");
     exit(1);
   }
-
-  printf("DETACHED!!\n");
-
-  /* if(shmctl(shId, IPC_RMID, 0) < 0){ */
-    /* perror("deallocate failed.\n"); */
-    /* exit(1); */
-  /* } */
-
-  printf("OUTTA HERE!\n");
 
   return 0;
 }
