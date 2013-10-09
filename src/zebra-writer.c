@@ -7,12 +7,48 @@
 #include <sys/shm.h>
 #include <string.h>
 #include "zebra-shared.h"
+#include "zebra-writer.h"
 
+/* **************************************************************
+ * Function implementations
+ * ************************************************************** */
 
+/**
+ * What to do on a sigusr
+ */
+void signal_handler(int sig) {
+  switch(sig) {
 
-void sig_user_handler(int sig) {
-  printf("yay\n");
+  case SIGUSR1: case SIGUSR2: {
+    printf("sigusr: %d\n", sig);
+    // do sig user stuff
+    break;
+  }
+    
+  case SIGINT: {
+    printf("sigint\n");
+    clean_and_exit();
+    break;
+  }
+  default: {
+    //defualt
+    printf("eff\n");
+  }
+  }
 }
+
+
+/**
+ * Cleanup shared mem and exit
+ */
+void clean_and_exit() {
+  shmctl(shmId, IPC_RMID, 0);
+  exit(0);
+}
+
+/* **************************************************************
+ * Main
+ * ************************************************************** */
 
 /**
  * Main
@@ -20,8 +56,10 @@ void sig_user_handler(int sig) {
 int main(void) {
   
   key_t mem_key = ftok(zebra_keygen, 0);
-  
-  int shmId = shmget(mem_key , zebra_size, IPC_CREAT|S_IRUSR|S_IWUSR);
+  signal(SIGINT, signal_handler);
+  signal(SIGUSR1, signal_handler);
+  signal(SIGUSR2, signal_handler);
+  shmId = shmget(mem_key , zebra_size, IPC_CREAT|S_IRUSR|S_IWUSR);
   if (shmId < 0) {
     printf("Failed get\n");
     exit(-1);
@@ -30,7 +68,7 @@ int main(void) {
   printf("made: %d\n", shmId);
   printf("my pid: %d\n", getpid());
   
-  char* sharedPtr = shmat(shmId, (void*)0, 0);
+  sharedPtr = shmat(shmId, (void*)0, 0);
   
   if (sharedPtr < 0) {
     printf("Failed attach\n");
@@ -38,19 +76,21 @@ int main(void) {
   }
   
   pid_t my_pid = getpid();
-
+  
   // write my pid to mem
   memcpy(sharedPtr, int_bytes(&my_pid), sizeof(int));
   // write 0 to read count
   int zero = 1;
   printf("zed: %d\n", zero);
   memcpy(sharedPtr+4, int_bytes(&zero), sizeof(int));
-  int i;
+  
   fgets(sharedPtr+8, zebra_size - 8, stdin);
   pause();
 
   
-  shmctl(shmId, IPC_RMID, 0);
-
-  return 0;
+  
+  clean_and_exit();
+  return -1;
 }
+
+
