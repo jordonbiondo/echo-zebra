@@ -6,6 +6,7 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <string.h>
+#include <signal.h>
 #include "zebra-shared.h"
 #include "zebra-writer.h"
 
@@ -20,6 +21,12 @@ int connected_readers = 0;
  */
 void signal_handler(int sig) {
   switch(sig) {
+
+  case SIGALRM: {
+    printf("hmmm, maybe a reader died...\n");
+    connected_readers--;
+    break;
+  }
 
   case SIGUSR1: {
     return;
@@ -65,6 +72,7 @@ int main(void) {
   signal(SIGINT, signal_handler);
   signal(SIGUSR1, signal_handler);
   signal(SIGUSR2, signal_handler);
+  signal(SIGALRM, signal_handler);
 
   shmId = shmget(mem_key , zebra_size, IPC_CREAT|S_IRUSR|S_IWUSR);
   if (shmId < 0) {
@@ -91,15 +99,20 @@ int main(void) {
   // set read count to initial 0
   ((int*)sharedPtr)[1] = 0;
   
-  fgets(MSG_LOC(sharedPtr), zebra_msg_size, stdin);
-
+  /**
+   * Write loop
+   */
   while(1) {
+    printf("count: %d\n", ((int*)sharedPtr)[2]); // increment read count
     if (((int*)sharedPtr)[2] < connected_readers) {
+      printf("pausin!\n");
+      alarm(2);
       pause();
+      alarm(0);
     } else {
       fgets(MSG_LOC(sharedPtr), zebra_msg_size, stdin);
       ((int*)sharedPtr)[1] += 1;
-      //reset_read_count();
+      ((int*)sharedPtr)[2] = 0;
     }
   }
   clean_and_exit();
