@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -10,11 +11,16 @@
 #include "zebra-shared.h"
 #include "zebra-writer.h"
 
+
 /* **************************************************************
- * Function implementations
+ * Globals
  * ************************************************************** */
 
 int connected_readers = 0;
+
+/* **************************************************************
+ * Function implementations
+ * ************************************************************** */
 
 /**
  * What to do on a sigusr
@@ -23,28 +29,32 @@ void signal_handler(int sig) {
   switch(sig) {
 
   case SIGALRM: {
-    printf("hmmm, maybe a reader died...\n");
+    if (DEBUG) printf("hmmm, maybe a reader died...\n");
     connected_readers--;
+    if (connected_readers == 0 && DEBUG) {
+      printf("AAALLLL BYYYY MYSEEEEEEEEELF\n");
+    }
     break;
   }
 
   case SIGUSR1: {
+    // progress past pause to recheck read counts
     return;
     break;
   }
     
   case SIGUSR2: {
+    if (DEBUG) printf("new connection!\n");
     connected_readers ++;
     break;
   }
   case SIGINT: {
-    printf("sigint\n");
+    if (DEBUG) printf("got sigint\n");
     clean_and_exit();
     break;
   }
   default: {
-    //defualt
-    printf("eff\n");
+    printf("Sig handled when it shouldn't be: %d\n", sig);
     return;
   }
   }
@@ -66,8 +76,9 @@ void clean_and_exit() {
 /**
  * Main
  */
-int main(void) {
-  printf("%lu | %lu", sizeof(pid_t), sizeof(int));
+int main(int argc, char* argv[]) {
+  DEBUG = (argc > 1 && strcmp(argv[1], "-d") == 0);
+
   key_t mem_key = ftok(zebra_keygen, 0);
   signal(SIGINT, signal_handler);
   signal(SIGUSR1, signal_handler);
@@ -81,8 +92,6 @@ int main(void) {
   }
 
   pid_t my_pid = getpid();
-  printf("my mem: %d\n", shmId);
-  printf("my pid: %d\n", my_pid);
   
   sharedPtr = shmat(shmId, (void*)0, 0);
   
@@ -94,7 +103,6 @@ int main(void) {
   
   // write my pid to mem
   ((int*)sharedPtr)[0] = my_pid;
-  //write_int(PID_WRITE_LOC(sharedPtr), my_pid);
   
   // set read count to initial 0
   ((int*)sharedPtr)[1] = 0;
@@ -103,10 +111,11 @@ int main(void) {
    * Write loop
    */
   while(1) {
-    printf("count: %d\n", ((int*)sharedPtr)[2]); // increment read count
+    if(DEBUG) printf("read: %d/%d\n", ((int*)sharedPtr)[2], connected_readers); // increment read count
+    if (((int*)sharedPtr)[2] > connected_readers) connected_readers = ((int*)sharedPtr)[2];
     if (((int*)sharedPtr)[2] < connected_readers) {
-      printf("pausin!\n");
-      alarm(2);
+      if (DEBUG) printf("pausin!\n");
+      alarm(4);
       pause();
       alarm(0);
     } else {

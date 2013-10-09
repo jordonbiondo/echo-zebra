@@ -2,6 +2,8 @@
 #ifndef __ZEBRA_SHARED_H__
 #define __ZEBRA_SHARED_H__
 
+#include <stdbool.h>
+bool DEBUG = false;
 
 /**
  * location in shared me where the string message will go 
