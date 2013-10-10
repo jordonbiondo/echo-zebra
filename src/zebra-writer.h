@@ -23,5 +23,6 @@ void signal_handler(int);
  */
 void clean_and_exit();
 
+#define nth(type, byte_buffer, index) ((type*)byte_buffer)[index]
 
 #endif /* __ZEBRA_WRITER_H__ */

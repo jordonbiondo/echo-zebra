@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
   int size = zebra_size;  
   key_t key = ftok(zebra_keygen, 0);
   int shId;
-
+  
   //Get shared memory
   if((shId = shmget(key, size, S_IRUSR|S_IWUSR)) < 0) {
     perror("No active writer found.\n");
